@@ -19,14 +19,16 @@ class AgentFormService
     {
         Log::info("🔍 AgentFormService: Starting email verification for AgentForm ID: {$agentForm->id} (Attempt: {$attempt})");
 
-        // Simulate API call delay
-        sleep(2);
+        if (config('services.agentform.type') === 'time') {
+            // Simulate API call delay
+            sleep(config('services.agentform.wait_time'));
+        }
 
-        // Simulate CPU usage
-        UtilService::consume_cpu_with_hashing();
-
-        // Simulate memory usage
-        UtilService::consume_cpu_with_math();
+        if (config('services.agentform.type') === 'cpu') {
+            // Simulate CPU usage
+            UtilService::consume_cpu_with_hashing();
+            UtilService::consume_cpu_with_math();
+        }
 
 
         // Simulate failure 2 out of 3 times (66% failure rate)
@@ -60,12 +62,16 @@ class AgentFormService
     {
         Log::info("📧 AgentFormService: Starting welcome email sending for AgentForm ID: {$agentForm->id} (Attempt: {$attempt})");
 
-        // Simulate email service API call delay
-        sleep(1);
+        if (config('services.agentform.type') === 'time') {
+            // Simulate API call delay
+            sleep(config('services.agentform.wait_time'));
+        }
 
-        // Simulate email service API call delay
-        UtilService::consume_cpu_with_math();
-        UtilService::consume_cpu_with_math();
+        if (config('services.agentform.type') === 'cpu') {
+            // Simulate CPU usage
+            UtilService::consume_cpu_with_hashing();
+            UtilService::consume_cpu_with_math();
+        }
 
         // Simulate failure 2 out of 3 times (66% failure rate)
         $shouldFail = rand(1, 3) <= 2;

@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'agentform' => [
+        'type' => env('AGENTFORM_TYPE', 'time'),
+        'wait_time' => env('AGENTFORM_WAIT_TIME', 3),
+
+    ],
+
 ];
