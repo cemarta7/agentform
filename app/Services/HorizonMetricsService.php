@@ -16,14 +16,41 @@ class HorizonMetricsService
 
     public function __construct()
     {
-        // Try to resolve Horizon repositories if available
-        try {
-            $this->jobRepository = app(JobRepository::class);
-            $this->metricsRepository = app(MetricsRepository::class);
-        } catch (\Exception $e) {
-            // Horizon not available or not using Redis
+        // Only initialize Horizon services if Redis is available and we're using Redis queues
+        if ($this->isRedisAvailable() && config('queue.default') === 'redis') {
+            try {
+                $this->jobRepository = app(JobRepository::class);
+                $this->metricsRepository = app(MetricsRepository::class);
+            } catch (\Exception $e) {
+                // Horizon services not available, continue with database fallback
+                $this->jobRepository = null;
+                $this->metricsRepository = null;
+            }
+        } else {
             $this->jobRepository = null;
             $this->metricsRepository = null;
+        }
+    }
+
+    /**
+     * Check if Redis is actually available (extension + class)
+     */
+    private function isRedisAvailable(): bool
+    {
+        try {
+            // Check if Redis extension is loaded
+            if (!extension_loaded('redis')) {
+                return false;
+            }
+
+            // Check if Redis class exists
+            if (!class_exists('\Redis')) {
+                return false;
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            return false;
         }
     }
 
@@ -304,10 +331,39 @@ class HorizonMetricsService
      */
     public function getDashboardMetrics(): array
     {
+        $basicMetrics = $this->recordAgentFormMetrics();
+        $waitTimes = $this->getQueueWaitTimes();
+        $throughput = $this->getThroughputMetrics();
+
         return [
-            'basic_metrics' => $this->recordAgentFormMetrics(),
-            'queue_wait_times' => $this->getQueueWaitTimes(),
-            'throughput' => $this->getThroughputMetrics(),
+            // Structure expected by Vue components
+            'queue_sizes' => [
+                'default' => $this->getQueueSize('default'),
+                'verification' => $this->getQueueSize('verification'),
+                'email' => $this->getQueueSize('email'),
+            ],
+            'wait_times' => $waitTimes,
+            'throughput' => [
+                'jobs_per_minute_1' => $throughput['last_5_minutes']['verifications_per_minute'] + $throughput['last_5_minutes']['emails_per_minute'],
+                'jobs_per_minute_5' => $throughput['last_15_minutes']['verifications_per_minute'] + $throughput['last_15_minutes']['emails_per_minute'],
+                'jobs_per_minute_15' => $throughput['last_hour']['verifications_per_minute'] + $throughput['last_hour']['emails_per_minute'],
+            ],
+            'success_rates' => [
+                'verification_jobs' => $basicMetrics['verification_success_rate'],
+                'email_jobs' => $basicMetrics['email_success_rate'],
+                'overall' => ($basicMetrics['verification_success_rate'] + $basicMetrics['email_success_rate']) / 2,
+            ],
+            'processing_times' => [
+                'avg_verification_time' => $basicMetrics['average_processing_time'] / 2, // Rough estimate
+                'avg_email_time' => $basicMetrics['average_processing_time'] / 2, // Rough estimate
+                'avg_total_time' => $basicMetrics['average_processing_time'],
+            ],
+            'failed_jobs' => $basicMetrics['failed_jobs_count'],
+
+            // Legacy structure for backward compatibility
+            'basic_metrics' => $basicMetrics,
+            'queue_wait_times' => $waitTimes,
+            'throughput_detailed' => $throughput,
             'queue_connection' => config('queue.default'),
             'horizon_available' => $this->jobRepository !== null,
             'timestamp' => now()->toISOString(),
@@ -351,7 +407,7 @@ class HorizonMetricsService
      */
     public function isUsingRedis(): bool
     {
-        return config('queue.default') === 'redis';
+        return config('queue.default') === 'redis' && $this->isRedisAvailable();
     }
 
     /**

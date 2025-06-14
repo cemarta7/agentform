@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgentForm Dashboard Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 min-h-screen">
+    <div class="container mx-auto p-6">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-8">
+            🚀 AgentForm Dashboard Test
+        </h1>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <!-- AgentForm Metrics -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+                        📋 AgentForm Metrics
+                    </h2>
+                    <div id="agentform-loading" class="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                </div>
+                <div id="agentform-content" class="space-y-4">
+                    <!-- Content will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Horizon Metrics -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+                        🚀 Horizon Metrics
+                    </h2>
+                    <div id="horizon-loading" class="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                </div>
+                <div id="horizon-content" class="space-y-4">
+                    <!-- Content will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Raw Data Display -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    Raw AgentForm Data
+                </h3>
+                <pre id="agentform-raw" class="text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 p-4 rounded overflow-auto max-h-96"></pre>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    Raw Horizon Data
+                </h3>
+                <pre id="horizon-raw" class="text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 p-4 rounded overflow-auto max-h-96"></pre>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="mt-8 text-center">
+            <button onclick="refreshData()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg mr-4">
+                🔄 Refresh Data
+            </button>
+            <button onclick="toggleAutoRefresh()" id="auto-refresh-btn" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg">
+                ▶️ Start Auto-Refresh (15s)
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let autoRefreshInterval = null;
+        let isAutoRefreshing = false;
+
+        function formatNumber(value) {
+            return value.toLocaleString();
+        }
+
+        function formatPercentage(value) {
+            return `${value.toFixed(1)}%`;
+        }
+
+        function getStatusColor(rate) {
+            if (rate >= 80) return 'text-green-600 dark:text-green-400';
+            if (rate >= 60) return 'text-yellow-600 dark:text-yellow-400';
+            return 'text-red-600 dark:text-red-400';
+        }
+
+        async function fetchAgentFormMetrics() {
+            try {
+                // Use real API endpoint
+                const response = await fetch('/test/metrics/agentform');
+                const simulatedData = await response.json();
+
+                document.getElementById('agentform-loading').style.display = 'none';
+                document.getElementById('agentform-raw').textContent = JSON.stringify(simulatedData, null, 2);
+
+                const content = document.getElementById('agentform-content');
+                content.innerHTML = `
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                            <div class="text-2xl font-bold text-gray-900 dark:text-white">
+                                ${formatNumber(simulatedData.total_forms)}
+                            </div>
+                            <div class="text-sm text-gray-600 dark:text-gray-300">Total Forms</div>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                            <div class="text-2xl font-bold ${getStatusColor(simulatedData.overall_completion_rate)}">
+                                ${formatPercentage(simulatedData.overall_completion_rate)}
+                            </div>
+                            <div class="text-sm text-gray-600 dark:text-gray-300">Completion Rate</div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600 dark:text-gray-300">Verified Forms</span>
+                            <div class="text-right">
+                                <div class="font-semibold text-gray-900 dark:text-white">
+                                    ${formatNumber(simulatedData.verified_forms)}
+                                </div>
+                                <div class="text-xs ${getStatusColor(simulatedData.verification_success_rate)}">
+                                    ${formatPercentage(simulatedData.verification_success_rate)}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600 dark:text-gray-300">Emails Sent</span>
+                            <div class="text-right">
+                                <div class="font-semibold text-gray-900 dark:text-white">
+                                    ${formatNumber(simulatedData.emails_sent)}
+                                </div>
+                                <div class="text-xs ${getStatusColor(simulatedData.email_success_rate)}">
+                                    ${formatPercentage(simulatedData.email_success_rate)}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-gray-200 dark:border-gray-600 pt-3">
+                        <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Pending Work</div>
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600 dark:text-gray-400">🔍 Need Verification</span>
+                                <span class="font-medium text-orange-600 dark:text-orange-400">
+                                    ${formatNumber(simulatedData.pending_verification)}
+                                </span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600 dark:text-gray-400">📧 Need Email</span>
+                                <span class="font-medium text-blue-600 dark:text-blue-400">
+                                    ${formatNumber(simulatedData.pending_emails)}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error fetching AgentForm metrics:', error);
+                document.getElementById('agentform-content').innerHTML = '<div class="text-red-600">Error loading metrics</div>';
+            }
+        }
+
+        async function fetchHorizonMetrics() {
+            try {
+                // Use real API endpoint
+                const response = await fetch('/test/metrics/horizon');
+                const simulatedData = await response.json();
+
+                document.getElementById('horizon-loading').style.display = 'none';
+                document.getElementById('horizon-raw').textContent = JSON.stringify(simulatedData, null, 2);
+
+                const totalQueued = simulatedData.queue_sizes.default + simulatedData.queue_sizes.verification + simulatedData.queue_sizes.email;
+
+                const content = document.getElementById('horizon-content');
+                content.innerHTML = `
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                            <div class="text-2xl font-bold ${getStatusColor(totalQueued === 0 ? 100 : (totalQueued < 10 ? 80 : 50))}">
+                                ${formatNumber(totalQueued)}
+                            </div>
+                            <div class="text-sm text-gray-600 dark:text-gray-300">Total Queued</div>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                            <div class="text-2xl font-bold text-red-600 dark:text-red-400">
+                                ${formatNumber(simulatedData.failed_jobs)}
+                            </div>
+                            <div class="text-sm text-gray-600 dark:text-gray-300">Failed Jobs</div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <div class="text-sm font-medium text-gray-700 dark:text-gray-300">Queue Sizes</div>
+                        <div class="space-y-1">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600 dark:text-gray-400">Default</span>
+                                <span class="font-medium ${getStatusColor(simulatedData.queue_sizes.default === 0 ? 100 : 50)}">
+                                    ${formatNumber(simulatedData.queue_sizes.default)}
+                                </span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600 dark:text-gray-400">Verification</span>
+                                <span class="font-medium ${getStatusColor(simulatedData.queue_sizes.verification === 0 ? 100 : 50)}">
+                                    ${formatNumber(simulatedData.queue_sizes.verification)}
+                                </span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600 dark:text-gray-400">Email</span>
+                                <span class="font-medium ${getStatusColor(simulatedData.queue_sizes.email === 0 ? 100 : 50)}">
+                                    ${formatNumber(simulatedData.queue_sizes.email)}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-gray-200 dark:border-gray-600 pt-3">
+                        <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Throughput (Jobs/min)</div>
+                        <div class="grid grid-cols-3 gap-2 text-center">
+                            <div>
+                                <div class="font-semibold text-gray-900 dark:text-white">
+                                    ${formatNumber(simulatedData.throughput.jobs_per_minute_1)}
+                                </div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">1m</div>
+                            </div>
+                            <div>
+                                <div class="font-semibold text-gray-900 dark:text-white">
+                                    ${formatNumber(simulatedData.throughput.jobs_per_minute_5)}
+                                </div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">5m</div>
+                            </div>
+                            <div>
+                                <div class="font-semibold text-gray-900 dark:text-white">
+                                    ${formatNumber(simulatedData.throughput.jobs_per_minute_15)}
+                                </div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">15m</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error fetching Horizon metrics:', error);
+                document.getElementById('horizon-content').innerHTML = '<div class="text-red-600">Error loading metrics</div>';
+            }
+        }
+
+        function refreshData() {
+            document.getElementById('agentform-loading').style.display = 'block';
+            document.getElementById('horizon-loading').style.display = 'block';
+
+            fetchAgentFormMetrics();
+            fetchHorizonMetrics();
+        }
+
+        function toggleAutoRefresh() {
+            const btn = document.getElementById('auto-refresh-btn');
+
+            if (isAutoRefreshing) {
+                clearInterval(autoRefreshInterval);
+                btn.textContent = '▶️ Start Auto-Refresh (15s)';
+                btn.className = 'bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg';
+                isAutoRefreshing = false;
+            } else {
+                autoRefreshInterval = setInterval(refreshData, 15000);
+                btn.textContent = '⏸️ Stop Auto-Refresh';
+                btn.className = 'bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg';
+                isAutoRefreshing = true;
+                refreshData(); // Immediate refresh
+            }
+        }
+
+        // Initial load
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshData();
+        });
+    </script>
+</body>
+</html>

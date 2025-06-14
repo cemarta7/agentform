@@ -111,13 +111,33 @@ class AgentFormService
                               ->whereNotNull('email_sent_at')
                               ->count();
 
+        $pendingVerification = AgentForm::whereNull('email_verified_at')->count();
+        $pendingEmails = AgentForm::whereNotNull('email_verified_at')
+                                 ->whereNull('email_sent_at')
+                                 ->count();
+
+        $verificationRate = $total > 0 ? round(($verified / $total) * 100, 2) : 0;
+        $emailRate = $verified > 0 ? round(($emailSent / $verified) * 100, 2) : 0;
+        $overallCompletionRate = $total > 0 ? round(($completed / $total) * 100, 2) : 0;
+
         return [
+            'total_forms' => $total,
+            'verified_forms' => $verified,
+            'emails_sent' => $emailSent,
+            'completed_forms' => $completed,
+            'pending_verification' => $pendingVerification,
+            'pending_emails' => $pendingEmails,
+            'verification_success_rate' => $verificationRate,
+            'email_success_rate' => $emailRate,
+            'overall_completion_rate' => $overallCompletionRate,
+
+            // Legacy fields for backward compatibility
             'total' => $total,
             'verified' => $verified,
             'email_sent' => $emailSent,
             'completed' => $completed,
-            'verification_rate' => $total > 0 ? round(($verified / $total) * 100, 2) : 0,
-            'completion_rate' => $total > 0 ? round(($completed / $total) * 100, 2) : 0,
+            'verification_rate' => $verificationRate,
+            'completion_rate' => $overallCompletionRate,
         ];
     }
 
