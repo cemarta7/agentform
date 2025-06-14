@@ -3,13 +3,18 @@
 namespace App\Jobs;
 
 use App\Models\AgentForm;
+use App\Services\AgentFormService;
+use App\Services\UtilService;
+use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 
 class VerifyEmailJob implements ShouldQueue
 {
-    use Queueable;
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     /**
      * The number of times the job may be attempted.
@@ -21,43 +26,40 @@ class VerifyEmailJob implements ShouldQueue
      */
     public $timeout = 300;
 
+    public $backoff = [10, 30, 60]; // 10s, 30s, 60s delays between retries
+
+    protected AgentForm $agentForm;
+
     /**
      * Create a new job instance.
      */
-    public function __construct(
-        public AgentForm $agentForm
-    ) {
+    public function __construct(AgentForm $agentForm)
+    {
+        $this->agentForm = $agentForm;
         $this->onQueue('verification');
     }
 
     /**
      * Execute the job.
      */
-    public function handle(): void
+    public function handle(AgentFormService $agentFormService): void
     {
-        Log::info("Starting email verification for AgentForm ID: {$this->agentForm->id} (Attempt: {$this->attempts()})");
+        $attempt = $this->attempts();
 
-        // Simulate verification process (e.g., API call to verification service)
-        sleep(2);
+        Log::info("🚀 VerifyEmailJob: Starting verification for AgentForm ID: {$this->agentForm->id} (Attempt: {$attempt})");
 
-        // Simulate failure 2 out of 3 times
-        $shouldFail = rand(1, 3) <= 2; // 66% chance of failure
+        try {
+            // Use the service to verify email
+            $agentFormService->verifyEmail($this->agentForm, $attempt);
 
-        if ($shouldFail && $this->attempts() < $this->tries) {
-            Log::warning("Email verification failed for AgentForm ID: {$this->agentForm->id} (Attempt: {$this->attempts()}) - Simulated failure, will retry");
-            throw new \Exception("Simulated verification service failure - attempt {$this->attempts()}");
+            // If verification successful, dispatch the welcome email job
+            Log::info("📤 VerifyEmailJob: Dispatching SendWelcomeEmailJob for AgentForm ID: {$this->agentForm->id}");
+            SendWelcomeEmailJob::dispatch($this->agentForm);
+
+        } catch (\Exception $e) {
+            Log::error("❌ VerifyEmailJob: Failed for AgentForm ID: {$this->agentForm->id} (Attempt: {$attempt}) - {$e->getMessage()}");
+            throw $e; // Re-throw to trigger retry mechanism
         }
-
-        // Simulate verification success (either random success or final attempt)
-        Log::info("Email verification successful for AgentForm ID: {$this->agentForm->id} (Attempt: {$this->attempts()})");
-
-        // Update the email_verified_at timestamp
-        $this->agentForm->update([
-            'email_verified_at' => now()
-        ]);
-
-        // Dispatch the welcome email job
-        SendWelcomeEmailJob::dispatch($this->agentForm)->onQueue('email');
     }
 
     /**
@@ -65,6 +67,6 @@ class VerifyEmailJob implements ShouldQueue
      */
     public function failed(\Throwable $exception): void
     {
-        Log::error("VerifyEmailJob permanently failed for AgentForm ID: {$this->agentForm->id} after {$this->tries} attempts. Error: {$exception->getMessage()}");
+        Log::error("💀 VerifyEmailJob: Final failure for AgentForm ID: {$this->agentForm->id} after {$this->tries} attempts - {$exception->getMessage()}");
     }
 }

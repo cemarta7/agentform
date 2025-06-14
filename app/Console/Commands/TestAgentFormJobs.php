@@ -2,8 +2,9 @@
 
 namespace App\Console\Commands;
 
-use App\Models\AgentForm;
 use App\Jobs\VerifyEmailJob;
+use App\Models\AgentForm;
+use App\Services\AgentFormService;
 use Illuminate\Console\Command;
 
 class TestAgentFormJobs extends Command
@@ -13,62 +14,89 @@ class TestAgentFormJobs extends Command
      *
      * @var string
      */
-    protected $signature = 'test:agent-form-jobs {--count=1 : Number of AgentForm records to create and process}';
+    protected $signature = 'test:agent-form-jobs {--count=1 : Number of forms to create}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Test the AgentForm verification and email jobs';
+    protected $description = 'Test AgentForm job processing by creating forms and dispatching jobs';
 
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(AgentFormService $agentFormService): int
     {
         $count = (int) $this->option('count');
 
-        $this->info("Creating {$count} test AgentForm record(s)...");
-        $this->newLine();
+        $this->info("🚀 Creating {$count} AgentForm(s) and dispatching jobs...");
 
-        $createdIds = [];
+        // Show initial statistics
+        $initialStats = $agentFormService->getStatistics();
+        $this->info("📊 Initial Statistics:");
+        $this->table(
+            ['Metric', 'Value'],
+            [
+                ['Total Forms', $initialStats['total']],
+                ['Verified', $initialStats['verified']],
+                ['Emails Sent', $initialStats['email_sent']],
+                ['Completed', $initialStats['completed']],
+                ['Verification Rate', $initialStats['verification_rate'] . '%'],
+                ['Completion Rate', $initialStats['completion_rate'] . '%'],
+            ]
+        );
 
-        for ($i = 1; $i <= $count; $i++) {
-            $this->info("Creating AgentForm record {$i}/{$count}...");
+        $createdForms = [];
+        $progressBar = $this->output->createProgressBar($count);
+        $progressBar->start();
 
-            // Create a test AgentForm record
+        for ($i = 0; $i < $count; $i++) {
             try {
+                // Create AgentForm with fake data
                 $agentForm = AgentForm::create([
                     'name' => fake()->name(),
                     'email' => fake()->email(),
                     'secret' => fake()->password(10),
                 ]);
 
-                $createdIds[] = $agentForm->id;
-                $this->info("✓ Created AgentForm with ID: {$agentForm->id}");
+                $createdForms[] = $agentForm;
 
                 // Dispatch the verification job
-                $this->info("→ Dispatching VerifyEmailJob to verification queue...");
-                VerifyEmailJob::dispatch($agentForm)->onQueue('verification');
+                VerifyEmailJob::dispatch($agentForm);
 
-                $this->info("✓ Job dispatched for AgentForm ID: {$agentForm->id}");
-                $this->newLine();
+                $progressBar->advance();
             } catch (\Exception $e) {
-                $this->error("❌ Error creating AgentForm record: {$e->getMessage()}");
+                $this->error("❌ Failed to create form {$i}: " . $e->getMessage());
+                continue;
             }
         }
 
-        $this->info('🎉 Summary:');
-        $this->info("• Created {$count} AgentForm record(s)");
-        $this->info("• IDs: " . implode(', ', $createdIds));
-        $this->info("• Dispatched {$count} VerifyEmailJob(s) to verification queue");
-        $this->newLine();
+        $progressBar->finish();
+        $this->newLine(2);
 
-        $this->info('📋 Next steps:');
-        $this->info('• Jobs will fail ~66% of the time and retry up to 3 times each');
-        $this->info('• Check logs with: tail -f storage/logs/laravel-2025-06-14.log');
-        $this->info('• Process jobs with: php artisan queue:work database --queue=verification,email --tries=3');
+        // Show summary
+        $this->info("✅ Successfully created {$count} AgentForm(s)");
+        $this->info("📋 Created Form IDs: " . collect($createdForms)->pluck('id')->implode(', '));
+
+        // Show updated statistics
+        $finalStats = $agentFormService->getStatistics();
+        $this->info("📊 Updated Statistics:");
+        $this->table(
+            ['Metric', 'Value', 'Change'],
+            [
+                ['Total Forms', $finalStats['total'], '+' . ($finalStats['total'] - $initialStats['total'])],
+                ['Verified', $finalStats['verified'], '+' . ($finalStats['verified'] - $initialStats['verified'])],
+                ['Emails Sent', $finalStats['email_sent'], '+' . ($finalStats['email_sent'] - $initialStats['email_sent'])],
+                ['Completed', $finalStats['completed'], '+' . ($finalStats['completed'] - $initialStats['completed'])],
+                ['Verification Rate', $finalStats['verification_rate'] . '%', ($finalStats['verification_rate'] - $initialStats['verification_rate']) . '%'],
+                ['Completion Rate', $finalStats['completion_rate'] . '%', ($finalStats['completion_rate'] - $initialStats['completion_rate']) . '%'],
+            ]
+        );
+
+        $this->info("🔄 Jobs have been dispatched to the queue. Monitor with:");
+        $this->line("   php artisan queue:work --verbose");
+        $this->line("   tail -f storage/logs/laravel.log");
 
         return Command::SUCCESS;
     }

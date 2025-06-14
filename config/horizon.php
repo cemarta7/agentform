@@ -244,13 +244,19 @@ return [
 
         'local' => [
             'supervisor-1' => [
-                'maxProcesses' => 3,
+                'maxProcesses' => 10,
+                'balanceMaxShift' => 1,
+                'balanceCooldown' => 3,
             ],
             'supervisor-verification' => [
-                'maxProcesses' => 2,
+                'maxProcesses' => 5,
+                'balanceMaxShift' => 1,
+                'balanceCooldown' => 3,
             ],
             'supervisor-email' => [
-                'maxProcesses' => 2,
+                'maxProcesses' => 8,
+                'balanceMaxShift' => 1,
+                'balanceCooldown' => 3,
             ],
         ],
     ],
