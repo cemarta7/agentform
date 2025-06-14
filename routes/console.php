@@ -8,4 +8,8 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Schedule::command('horizon:snapshot')->everyFiveMinutes();
+Schedule::command('horizon:snapshot')->everyThirtySeconds();
+
+Schedule::command('telescope:prune')->daily();
+
+Schedule::command('horizon:metrics --store')->everyThirtySeconds();

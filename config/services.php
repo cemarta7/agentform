@@ -36,9 +36,9 @@ return [
     ],
 
     'agentform' => [
-        'type' => env('AGENTFORM_TYPE', 'time'),
-        'wait_time' => env('AGENTFORM_WAIT_TIME', 3),
-
+        'type' => env('AGENTFORM_SIMULATION_TYPE', 'time'),
+        'wait_time' => env('AGENTFORM_WAIT_TIME', 2),
+        'failed' => env('AGENTFORM_FAILED', false),
     ],
 
 ];

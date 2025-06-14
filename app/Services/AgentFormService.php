@@ -30,13 +30,14 @@ class AgentFormService
             UtilService::consume_cpu_with_math();
         }
 
-
+        if (config('services.agentform.failed')) {
         // Simulate failure 2 out of 3 times (66% failure rate)
-        $shouldFail = rand(1, 3) <= 2;
+            $shouldFail = rand(1, 3) <= 2;
 
-        if ($shouldFail && $attempt < 3) {
-            Log::warning("⚠️ AgentFormService: Email verification failed for AgentForm ID: {$agentForm->id} (Attempt: {$attempt}) - External service error");
-            throw new \Exception("Email verification service temporarily unavailable - attempt {$attempt}");
+            if ($shouldFail && $attempt < 3) {
+                Log::warning("⚠️ AgentFormService: Email verification failed for AgentForm ID: {$agentForm->id} (Attempt: {$attempt}) - External service error");
+                    throw new \Exception("Email verification service temporarily unavailable - attempt {$attempt}");
+            }
         }
 
         // Success case
@@ -73,12 +74,14 @@ class AgentFormService
             UtilService::consume_cpu_with_math();
         }
 
+        if (config('services.agentform.failed')) {
         // Simulate failure 2 out of 3 times (66% failure rate)
         $shouldFail = rand(1, 3) <= 2;
 
         if ($shouldFail && $attempt < 3) {
             Log::warning("⚠️ AgentFormService: Welcome email sending failed for AgentForm ID: {$agentForm->id} (Attempt: {$attempt}) - Email service error");
-            throw new \Exception("Email service temporarily unavailable - attempt {$attempt}");
+                throw new \Exception("Email service temporarily unavailable - attempt {$attempt}");
+            }
         }
 
         // Success case
