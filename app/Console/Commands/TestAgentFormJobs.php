@@ -38,21 +38,25 @@ class TestAgentFormJobs extends Command
             $this->info("Creating AgentForm record {$i}/{$count}...");
 
             // Create a test AgentForm record
-            $agentForm = AgentForm::create([
-                'name' => "Test User {$i}",
-                'email' => fake()->email(),
-                'secret' => 'test-secret-' . now()->timestamp . '-' . $i,
-            ]);
+            try {
+                $agentForm = AgentForm::create([
+                    'name' => fake()->name(),
+                    'email' => fake()->email(),
+                    'secret' => fake()->password(10),
+                ]);
 
-            $createdIds[] = $agentForm->id;
-            $this->info("✓ Created AgentForm with ID: {$agentForm->id}");
+                $createdIds[] = $agentForm->id;
+                $this->info("✓ Created AgentForm with ID: {$agentForm->id}");
 
-            // Dispatch the verification job
-            $this->info("→ Dispatching VerifyEmailJob to verification queue...");
-            VerifyEmailJob::dispatch($agentForm)->onQueue('verification');
+                // Dispatch the verification job
+                $this->info("→ Dispatching VerifyEmailJob to verification queue...");
+                VerifyEmailJob::dispatch($agentForm)->onQueue('verification');
 
-            $this->info("✓ Job dispatched for AgentForm ID: {$agentForm->id}");
-            $this->newLine();
+                $this->info("✓ Job dispatched for AgentForm ID: {$agentForm->id}");
+                $this->newLine();
+            } catch (\Exception $e) {
+                $this->error("❌ Error creating AgentForm record: {$e->getMessage()}");
+            }
         }
 
         $this->info('🎉 Summary:');

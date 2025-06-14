@@ -14,7 +14,7 @@ class AgentFormController extends Controller
         try {
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
-                'email' => 'required|email|max:255|unique:agent_forms,email',
+                'email' => 'required|email|max:255',
                 'secret' => 'required|string|max:255',
             ]);
 
