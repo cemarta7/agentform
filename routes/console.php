@@ -9,9 +9,3 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('horizon:snapshot')->everyThirtySeconds();
-
-Schedule::command('telescope:prune')->daily();
-
-Schedule::command('horizon:metrics --store')->everyThirtySeconds();
-
-Schedule::command('metrics:collect')->everyThirtySeconds();

@@ -6,6 +6,7 @@ use App\Jobs\VerifyEmailJob;
 use App\Models\AgentForm;
 use App\Services\AgentFormService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class TestAgentFormJobs extends Command
@@ -15,7 +16,7 @@ class TestAgentFormJobs extends Command
      *
      * @var string
      */
-    protected $signature = 'test:agent-form-jobs {--count=1 : Number of forms to create} {--reset=false : Reset the database}';
+    protected $signature = 'test:agent-form-jobs {--count=1 : Number of forms to create} {--reset=false : Reset the database} {--type=time : Type of test (time or cpu)}';
 
     /**
      * The console command description.
@@ -36,6 +37,9 @@ class TestAgentFormJobs extends Command
         if ($this->option('reset')) {
             DB::table('agent_forms')->truncate();
         }
+
+        $type = $this->option('type');
+        Cache::put('settings.test_type', $type);
 
         // Show initial statistics
         $initialStats = $agentFormService->getStatistics();

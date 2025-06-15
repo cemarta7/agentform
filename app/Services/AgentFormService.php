@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\AgentForm;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class AgentFormService
@@ -20,12 +21,14 @@ class AgentFormService
     {
         //Log::info("🔍 AgentFormService: Starting email verification for AgentForm ID: {$agentForm->id} (Attempt: {$attempt})");
 
-        if (config('services.agentform.type') === 'time') {
+        $testType = Cache::get('settings.test_type', 'time');
+
+        if ($testType === 'time') {
             // Simulate API call delay
             sleep(config('services.agentform.wait_time'));
         }
 
-        if (config('services.agentform.type') === 'cpu') {
+        if ($testType === 'cpu') {
             // Simulate CPU usage
             UtilService::consume_cpu_with_hashing();
             UtilService::consume_cpu_with_math();
@@ -64,12 +67,14 @@ class AgentFormService
     {
         //Log::info("📧 AgentFormService: Starting welcome email sending for AgentForm ID: {$agentForm->id} (Attempt: {$attempt})");
 
-        if (config('services.agentform.type') === 'time') {
+        $testType = Cache::get('settings.test_type', 'time');
+
+        if ($testType === 'time') {
             // Simulate API call delay
             sleep(config('services.agentform.wait_time'));
         }
 
-        if (config('services.agentform.type') === 'cpu') {
+        if ($testType === 'cpu') {
             // Simulate CPU usage
             UtilService::consume_cpu_with_hashing();
             UtilService::consume_cpu_with_math();
