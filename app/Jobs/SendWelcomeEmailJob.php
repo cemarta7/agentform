@@ -46,14 +46,14 @@ class SendWelcomeEmailJob implements ShouldQueue
     {
         $attempt = $this->attempts();
 
-        Log::info("🚀 SendWelcomeEmailJob: Starting email sending for AgentForm ID: {$this->agentForm->id} (Attempt: {$attempt})");
+        //Log::info("🚀 SendWelcomeEmailJob: Starting email sending for AgentForm ID: {$this->agentForm->id} (Attempt: {$attempt})");
 
         try {
             // Use the service to send welcome email
             $agentFormService->sendWelcomeEmail($this->agentForm, $attempt);
 
         } catch (\Exception $e) {
-            Log::error("❌ SendWelcomeEmailJob: Failed for AgentForm ID: {$this->agentForm->id} (Attempt: {$attempt}) - {$e->getMessage()}");
+            //Log::error("❌ SendWelcomeEmailJob: Failed for AgentForm ID: {$this->agentForm->id} (Attempt: {$attempt}) - {$e->getMessage()}");
             throw $e; // Re-throw to trigger retry mechanism
         }
     }

@@ -220,25 +220,25 @@
                     </div>
 
                     <div class="border-t border-gray-200 dark:border-gray-600 pt-3">
-                        <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Throughput (Jobs/min)</div>
+                        <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Processes</div>
                         <div class="grid grid-cols-3 gap-2 text-center">
                             <div>
                                 <div class="font-semibold text-gray-900 dark:text-white">
-                                    ${formatNumber(simulatedData.throughput.jobs_per_minute_1)}
+                                    ${formatNumber(simulatedData.processes.verification)}
                                 </div>
-                                <div class="text-xs text-gray-500 dark:text-gray-400">1m</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">Verification</div>
                             </div>
                             <div>
                                 <div class="font-semibold text-gray-900 dark:text-white">
-                                    ${formatNumber(simulatedData.throughput.jobs_per_minute_5)}
+                                    ${formatNumber(simulatedData.processes.email)}
                                 </div>
-                                <div class="text-xs text-gray-500 dark:text-gray-400">5m</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">Email</div>
                             </div>
                             <div>
                                 <div class="font-semibold text-gray-900 dark:text-white">
-                                    ${formatNumber(simulatedData.throughput.jobs_per_minute_15)}
+                                    ${formatNumber(simulatedData.processes.default)}
                                 </div>
-                                <div class="text-xs text-gray-500 dark:text-gray-400">15m</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">Default</div>
                             </div>
                         </div>
                     </div>

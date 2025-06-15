@@ -11,6 +11,9 @@ interface AgentFormStats {
     overall_completion_rate: number;
     pending_verification: number;
     pending_emails: number;
+    time_started: number;
+    time_ended: number;
+    time_duration: number;
 }
 
 const stats = ref<AgentFormStats>({
@@ -22,6 +25,9 @@ const stats = ref<AgentFormStats>({
     overall_completion_rate: 0,
     pending_verification: 0,
     pending_emails: 0,
+    time_started: 0,
+    time_ended: 0,
+    time_duration: 0,
 });
 
 const loading = ref(true);
@@ -148,6 +154,30 @@ onUnmounted(() => {
                             {{ formatNumber(stats.pending_emails) }}
                         </span>
                     </div>
+                </div>
+            </div>
+
+            <!-- Time Started -->
+            <div class="border-t border-gray-200 dark:border-gray-600 pt-3">
+                <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Time Started</div>
+                <div class="text-sm text-gray-600 dark:text-gray-400">
+                    {{ new Date(stats.time_started).toLocaleString() }}
+                </div>
+            </div>
+
+            <!-- Time Ended -->
+            <div class="border-t border-gray-200 dark:border-gray-600 pt-3">
+                <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Time Ended</div>
+                <div class="text-sm text-gray-600 dark:text-gray-400">
+                    {{ new Date(stats.time_ended).toLocaleString() }}
+                </div>
+            </div>
+
+            <!-- Time Duration -->
+            <div class="border-t border-gray-200 dark:border-gray-600 pt-3">
+                <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Time Duration</div>
+                <div class="text-sm text-gray-600 dark:text-gray-400">
+                    {{ stats.time_duration }}  seconds
                 </div>
             </div>
         </div>

@@ -46,18 +46,18 @@ class VerifyEmailJob implements ShouldQueue
     {
         $attempt = $this->attempts();
 
-        Log::info("🚀 VerifyEmailJob: Starting verification for AgentForm ID: {$this->agentForm->id} (Attempt: {$attempt})");
+        //Log::info("🚀 VerifyEmailJob: Starting verification for AgentForm ID: {$this->agentForm->id} (Attempt: {$attempt})");
 
         try {
             // Use the service to verify email
             $agentFormService->verifyEmail($this->agentForm, $attempt);
 
             // If verification successful, dispatch the welcome email job
-            Log::info("📤 VerifyEmailJob: Dispatching SendWelcomeEmailJob for AgentForm ID: {$this->agentForm->id}");
+            //Log::info("📤 VerifyEmailJob: Dispatching SendWelcomeEmailJob for AgentForm ID: {$this->agentForm->id}");
             SendWelcomeEmailJob::dispatch($this->agentForm);
 
         } catch (\Exception $e) {
-            Log::error("❌ VerifyEmailJob: Failed for AgentForm ID: {$this->agentForm->id} (Attempt: {$attempt}) - {$e->getMessage()}");
+            //Log::error("❌ VerifyEmailJob: Failed for AgentForm ID: {$this->agentForm->id} (Attempt: {$attempt}) - {$e->getMessage()}");
             throw $e; // Re-throw to trigger retry mechanism
         }
     }

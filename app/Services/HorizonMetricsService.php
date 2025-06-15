@@ -8,11 +8,13 @@ use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Redis;
 use Laravel\Horizon\Contracts\JobRepository;
 use Laravel\Horizon\Contracts\MetricsRepository;
+use Laravel\Horizon\Contracts\WorkloadRepository;
 
 class HorizonMetricsService
 {
     protected $jobRepository;
     protected $metricsRepository;
+    protected $workloadRepository;
 
     public function __construct()
     {
@@ -21,14 +23,17 @@ class HorizonMetricsService
             try {
                 $this->jobRepository = app(JobRepository::class);
                 $this->metricsRepository = app(MetricsRepository::class);
+                $this->workloadRepository = app(WorkloadRepository::class);
             } catch (\Exception $e) {
                 // Horizon services not available, continue with database fallback
                 $this->jobRepository = null;
                 $this->metricsRepository = null;
+                $this->workloadRepository = null;
             }
         } else {
             $this->jobRepository = null;
             $this->metricsRepository = null;
+            $this->workloadRepository = null;
         }
     }
 
@@ -76,12 +81,18 @@ class HorizonMetricsService
         return $metrics;
     }
 
+    public function getWorkloadMetrics()
+    {
+        return collect($this->workloadRepository->get());
+    }
+
     /**
      * Get the current size of a specific queue (works with both database and Redis)
      */
     public function getQueueSize(string $queue): int
     {
         $queueConnection = config('queue.default');
+        ray($queueConnection);
 
         if ($queueConnection === 'redis' && $this->jobRepository) {
             // Use Horizon's job repository for Redis queues
@@ -90,8 +101,13 @@ class HorizonMetricsService
                 if (!extension_loaded('redis') && !class_exists('Redis')) {
                     return 0;
                 }
-                return collect($this->jobRepository->getPending())->count();
+
+                $queueSize = $this->getWorkloadMetrics()->where('name', $queue)->first()['length'];
+                ray($queueSize);
+                return $queueSize;
+
             } catch (\Exception $e) {
+                ray($e);
                 // Fallback to Redis direct query
                 return $this->getRedisQueueSize($queue);
             }
@@ -263,8 +279,9 @@ class HorizonMetricsService
             if ($queueConnection === 'redis' && $this->metricsRepository) {
                 // Use Horizon's metrics for Redis queues
                 try {
-                    $waitTime = $this->getHorizonWaitTime($queue);
+                    $waitTime = $this->getWorkloadMetrics()->where('name', $queue)->first()['wait'];
                     $waitTimes[$queue] = $waitTime;
+                    ray($waitTimes);
                 } catch (\Exception $e) {
                     $waitTimes[$queue] = 0;
                 }
@@ -335,6 +352,7 @@ class HorizonMetricsService
         $waitTimes = $this->getQueueWaitTimes();
         $throughput = $this->getThroughputMetrics();
 
+        $workload = $this->getWorkloadMetrics();
         return [
             // Structure expected by Vue components
             'queue_sizes' => [
@@ -343,10 +361,10 @@ class HorizonMetricsService
                 'email' => $this->getQueueSize('email'),
             ],
             'wait_times' => $waitTimes,
-            'throughput' => [
-                'jobs_per_minute_1' => $throughput['last_5_minutes']['verifications_per_minute'] + $throughput['last_5_minutes']['emails_per_minute'],
-                'jobs_per_minute_5' => $throughput['last_15_minutes']['verifications_per_minute'] + $throughput['last_15_minutes']['emails_per_minute'],
-                'jobs_per_minute_15' => $throughput['last_hour']['verifications_per_minute'] + $throughput['last_hour']['emails_per_minute'],
+            'processes' => [
+                'verification' => $workload->where('name', 'verification')->first()['processes'],
+                'email' => $workload->where('name', 'email')->first()['processes'],
+                'default' => $workload->where('name', 'default')->first()['processes'],
             ],
             'success_rates' => [
                 'verification_jobs' => $basicMetrics['verification_success_rate'],

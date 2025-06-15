@@ -13,10 +13,10 @@ interface QueueMetrics {
         verification: number;
         email: number;
     };
-    throughput: {
-        jobs_per_minute_1: number;
-        jobs_per_minute_5: number;
-        jobs_per_minute_15: number;
+    processes: {
+        verification: number;
+        email: number;
+        default: number;
     };
     success_rates: {
         verification_jobs: number;
@@ -34,7 +34,7 @@ interface QueueMetrics {
 const metrics = ref<QueueMetrics>({
     queue_sizes: { default: 0, verification: 0, email: 0 },
     wait_times: { default: 0, verification: 0, email: 0 },
-    throughput: { jobs_per_minute_1: 0, jobs_per_minute_5: 0, jobs_per_minute_15: 0 },
+    processes: { verification: 0, email: 0, default: 0 },
     success_rates: { verification_jobs: 0, email_jobs: 0, overall: 0 },
     processing_times: { avg_verification_time: 0, avg_email_time: 0, avg_total_time: 0 },
     failed_jobs: 0,
@@ -160,27 +160,27 @@ onUnmounted(() => {
                 </div>
             </div>
 
-            <!-- Throughput -->
+            <!-- Processes -->
             <div class="border-t border-gray-200 dark:border-gray-600 pt-3">
-                <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Throughput (Jobs/min)</div>
+                <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Processes</div>
                 <div class="grid grid-cols-3 gap-2 text-center">
                     <div>
                         <div class="font-semibold text-gray-900 dark:text-white">
-                            {{ formatNumber(metrics.throughput.jobs_per_minute_1) }}
+                            {{ formatNumber(metrics.processes.verification) }}
                         </div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400">1m</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">Verification</div>
                     </div>
                     <div>
                         <div class="font-semibold text-gray-900 dark:text-white">
-                            {{ formatNumber(metrics.throughput.jobs_per_minute_5) }}
+                            {{ formatNumber(metrics.processes.email) }}
                         </div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400">5m</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">Email</div>
                     </div>
                     <div>
                         <div class="font-semibold text-gray-900 dark:text-white">
-                            {{ formatNumber(metrics.throughput.jobs_per_minute_15) }}
+                            {{ formatNumber(metrics.processes.default) }}
                         </div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400">15m</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">Default</div>
                     </div>
                 </div>
             </div>

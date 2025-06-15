@@ -13,3 +13,5 @@ Schedule::command('horizon:snapshot')->everyThirtySeconds();
 Schedule::command('telescope:prune')->daily();
 
 Schedule::command('horizon:metrics --store')->everyThirtySeconds();
+
+Schedule::command('metrics:collect')->everyThirtySeconds();

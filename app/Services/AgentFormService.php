@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AgentForm;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
 class AgentFormService
@@ -17,7 +18,7 @@ class AgentFormService
      */
     public function verifyEmail(AgentForm $agentForm, int $attempt = 1): bool
     {
-        Log::info("🔍 AgentFormService: Starting email verification for AgentForm ID: {$agentForm->id} (Attempt: {$attempt})");
+        //Log::info("🔍 AgentFormService: Starting email verification for AgentForm ID: {$agentForm->id} (Attempt: {$attempt})");
 
         if (config('services.agentform.type') === 'time') {
             // Simulate API call delay
@@ -31,17 +32,17 @@ class AgentFormService
         }
 
         if (config('services.agentform.failed')) {
-        // Simulate failure 2 out of 3 times (66% failure rate)
+            // Simulate failure 2 out of 3 times (66% failure rate)
             $shouldFail = rand(1, 3) <= 2;
 
             if ($shouldFail && $attempt < 3) {
                 Log::warning("⚠️ AgentFormService: Email verification failed for AgentForm ID: {$agentForm->id} (Attempt: {$attempt}) - External service error");
-                    throw new \Exception("Email verification service temporarily unavailable - attempt {$attempt}");
+                throw new \Exception("Email verification service temporarily unavailable - attempt {$attempt}");
             }
         }
 
         // Success case
-        Log::info("✅ AgentFormService: Email verification successful for AgentForm ID: {$agentForm->id} (Attempt: {$attempt})");
+        //Log::info("✅ AgentFormService: Email verification successful for AgentForm ID: {$agentForm->id} (Attempt: {$attempt})");
 
         // Update the email_verified_at timestamp
         $agentForm->update([
@@ -61,7 +62,7 @@ class AgentFormService
      */
     public function sendWelcomeEmail(AgentForm $agentForm, int $attempt = 1): bool
     {
-        Log::info("📧 AgentFormService: Starting welcome email sending for AgentForm ID: {$agentForm->id} (Attempt: {$attempt})");
+        //Log::info("📧 AgentFormService: Starting welcome email sending for AgentForm ID: {$agentForm->id} (Attempt: {$attempt})");
 
         if (config('services.agentform.type') === 'time') {
             // Simulate API call delay
@@ -75,24 +76,24 @@ class AgentFormService
         }
 
         if (config('services.agentform.failed')) {
-        // Simulate failure 2 out of 3 times (66% failure rate)
-        $shouldFail = rand(1, 3) <= 2;
+            // Simulate failure 2 out of 3 times (66% failure rate)
+            $shouldFail = rand(1, 3) <= 2;
 
-        if ($shouldFail && $attempt < 3) {
-            Log::warning("⚠️ AgentFormService: Welcome email sending failed for AgentForm ID: {$agentForm->id} (Attempt: {$attempt}) - Email service error");
+            if ($shouldFail && $attempt < 3) {
+                Log::warning("⚠️ AgentFormService: Welcome email sending failed for AgentForm ID: {$agentForm->id} (Attempt: {$attempt}) - Email service error");
                 throw new \Exception("Email service temporarily unavailable - attempt {$attempt}");
             }
         }
 
         // Success case
-        Log::info("✅ AgentFormService: Welcome email sent successfully for AgentForm ID: {$agentForm->id} (Attempt: {$attempt})");
+        //Log::info("✅ AgentFormService: Welcome email sent successfully for AgentForm ID: {$agentForm->id} (Attempt: {$attempt})");
 
         // Update the email_sent_at timestamp
         $agentForm->update([
             'email_sent_at' => now()
         ]);
 
-        Log::info("🎉 AgentFormService: Email process completed for AgentForm ID: {$agentForm->id} - Email: {$agentForm->email}");
+        //Log::info("🎉 AgentFormService: Email process completed for AgentForm ID: {$agentForm->id} - Email: {$agentForm->email}");
 
         return true;
     }
@@ -116,6 +117,10 @@ class AgentFormService
                                  ->whereNull('email_sent_at')
                                  ->count();
 
+        $timeStarted = AgentForm::min('created_at');
+        $timeEnded = AgentForm::max('updated_at');
+        $timeDuration = Carbon::parse($timeStarted)->diffInSeconds(Carbon::parse($timeEnded));
+
         $verificationRate = $total > 0 ? round(($verified / $total) * 100, 2) : 0;
         $emailRate = $verified > 0 ? round(($emailSent / $verified) * 100, 2) : 0;
         $overallCompletionRate = $total > 0 ? round(($completed / $total) * 100, 2) : 0;
@@ -130,6 +135,9 @@ class AgentFormService
             'verification_success_rate' => $verificationRate,
             'email_success_rate' => $emailRate,
             'overall_completion_rate' => $overallCompletionRate,
+            'time_started' => $timeStarted,
+            'time_ended' => $timeEnded,
+            'time_duration' => $timeDuration,
 
             // Legacy fields for backward compatibility
             'total' => $total,
